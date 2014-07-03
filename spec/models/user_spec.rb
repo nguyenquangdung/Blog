@@ -28,7 +28,7 @@ describe User do
   it { should respond_to(:following?) }
   it { should respond_to(:follow!) }
   it { should respond_to(:unfollow!) }
-
+  it { should respond_to(:entries) }
 
   it { should be_valid }
   it { should_not be_admin }
@@ -170,5 +170,29 @@ foo@bar_baz.com foo@bar+baz.com]
       its(:followed_users) { should_not include(other_user) }
     end
   end
-end
+ 
+  
+  describe "entry associations" do
 
+    before { @user.save }
+    let!(:older_entry) do
+      FactoryGirl.create(:entry, user: @user, created_at: 1.day.ago)
+    end
+    let!(:newer_entry) do
+      FactoryGirl.create(:entry, user: @user, created_at: 1.hour.ago)
+    end
+
+    it "should have the right entries in the right order" do
+      expect(@user.entries.to_a).to eq [newer_entry, older_entry]
+    end
+
+    it "should destroy associated entries" do
+      entries = @user.entries.to_a
+      @user.destroy
+      expect(entries).not_to be_empty
+      entries.each do |entry|
+        expect(Entry.where(id: entry.id)).to be_empty
+      end
+    end
+  end
+end
